@@ -1,6 +1,6 @@
 <?php
 // Replace with your actual admin email (yeah just put your email here)
-$GLOBALS['ACTUAL_ADMIN'] = "parkerbl@gmail.com";
+$GLOBALS['ACTUAL_ADMIN'] = "yourEmail@domain.com";
 
 // default destination for chat messages
 $GLOBALS['DEFAULT_DESTINATION'] = '#chatRoom'
