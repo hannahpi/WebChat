@@ -5,7 +5,7 @@ require_once '../config/config.php';
 
 class Message {
     private $conn;
-    private $table_name = 'Message';
+    private $table_name = 'Messages';
     private $attributes;
     private $debugH;
     private $messageID; //primary key, no reason to change this.
@@ -15,6 +15,7 @@ class Message {
     public $destination;
     public $messageText;
     public $date;
+    public $visible;
 
 
     /**
@@ -27,7 +28,8 @@ class Message {
             "UserID" => $dbRow["UserID"],
             "Destination" => $dbRow["Destination"],
             "MessageText" => $dbRow["MessageText"],
-            "Date" => $dbRow["Date"]
+            "Date" => $dbRow["Date"],
+            "Visible" => $dbRow["Visible"]
         );
         return $dbMessage;
     }
@@ -40,45 +42,47 @@ class Message {
         $this->dirty = false;
     }
 
-    public function createNew($userID, $messageText, $destination=$GLOBALS['DEFAULT_DESTINATION'],
-        $userLevelID=NULL, $userID=NULL, $creationDate=NULL ) {  //password is generated
-
-        $this->email = $email;
-        $this->displayName = $displayName;
-        $this->lastName = $lastName;
-        $this->firstName = $firstName;
-        
-        $this->userID = $userID;
-        $this->creationDate = $creationDate;
-
-        $query = " INSERT INTO User (UserID, Email, DisplayName, FirstName, LastName, Password, "
-                ." PassVer, UserLevelID, CreationDate) "
-                ." VALUES (:userID, :email, :displayName, :firstName, :lastName, :password, "
-                ." NULL, :userLevelID, :creationDate ); ";
-
-        $passGen = chr(random_int(33,126)); //generate random ascii sequence
-        for ($i=1; $i<15; $i++) {
-            $passGen .= chr(random_int(33,126));
-        }
-
-        //send email with confirmation link
-		$headers = "From: " . $GLOBALS['AUTO_ADMIN_NAME'] . " " . $GLOBALS['AUTO_ADMIN_EMAIL'];
-		$subject = "Confirm your email address";
-		$message = "Please confirm your email address at ". $GLOBALS['FQP'] . "/verifyemail.html?confirmNum=$passGen&Email=$email \n"
-		         . "If you have problems you may go back to ". $GLOBALS['FQP'] . "/getconfirm.html and try again!";
-		mail($email,$subject,$message,$headers);
-        $passGen = crypt($passGen);
+    public function deleteUserMessages($userID) {
+        $query = " UPDATE Messages "
+              .= " SET Visible = false "
+              .= " WHERE UserID = :userID ; ";
 
         $stmt = $this->conn->prepare($query, $this->attributes);
-        $stmt->bindValue(":userID", $this->userID, PDO::PARAM_INT);  //this should be NULL
-        $stmt->bindValue(":email", $this->email, PDO::PARAM_STR);
-        $stmt->bindValue(":displayName", $this->displayName, PDO::PARAM_STR);
-        $stmt->bindValue(":firstName", $this->firstName, PDO::PARAM_STR);
-        $stmt->bindValue(":lastName", $this->lastName, PDO::PARAM_STR);
-        $stmt->bindValue(":password", $passGen, PDO::PARAM_STR);
-        $stmt->bindValue(":userLevelID", $this->userLevelID, PDO::PARAM_INT);
-        $stmt->bindValue(":creationDate", $this->creationDate, PDO::PARAM_INT);
-        $stmt->execute() or $this->debugH->errormail("Unknown", "Create new user failed", "Create User Query failed.");
+        $stmt->bindValue(":userID", $messageID, PDO::PARAM_INT);
+        $stmt->execute() or $this->debugH->errormail("Unknown", "Delete message failed", "Delete Message ID Query failed.");
+    }
+
+    public function deleteMessage($messageID) {
+        $query = " UPDATE Messages "
+              .= " SET Visible = false "
+              .= " WHERE MessageID = :messageID ; ";
+
+        $stmt = $this->conn->prepare($query, $this->attributes);
+        $stmt->bindValue(":messageID", $messageID, PDO::PARAM_INT);
+        $stmt->execute() or $this->debugH->errormail("Unknown", "Delete message failed", "Delete Message ID Query failed.");
+    }
+
+    public function createNew($messageID, $userID, $messageText, $destination=$GLOBALS['DEFAULT_DESTINATION'],
+        $date=NULL, $visible=NULL ) {  
+
+        $this->messageId = $messageID;   
+        $this->userID = $userID;
+        $this->messageText = $messageText;
+        $this->destination = $destination;
+        $this->date = $date;
+        $this->visible = $visible;
+                
+        $query = " INSERT INTO Messages (MessageID, UserID, Destination, MessageText, `Date`, Visible) "
+                ." VALUES (:messageID, :userID, :destination, :messageText, :date, :visible ) ;";
+
+        $stmt = $this->conn->prepare($query, $this->attributes);
+        $stmt->bindValue(":messageID", $this->userID, PDO::PARAM_INT);  //this should be NULL
+        $stmt->bindValue(":userID", $this->userID, PDO::PARAM_INT);  
+        $stmt->bindValue(":destination", $this->destination, PDO::PARAM_STR);
+        $stmt->bindValue(":messageText", $this->messageText, PDO::PARAM_STR);        
+        $stmt->bindValue(":date", $this->userLevelID, PDO::PARAM_INT);
+        $stmt->bindValue(":visible", $this->creationDate, PDO::PARAM_INT);
+        $stmt->execute() or $this->debugH->errormail("Unknown", "Create new message failed", "Create Messages Query failed.");
         if ($stmt->rowCount()==0)
             return;
         $row = $stmt->fetch(PDO::FETCH_ASSOC);

@@ -13,7 +13,7 @@ class User {
     private $passVer;
 
     public $email;
-    public $displayName;
+    public $nickname;
     public $firstName;
     public $lastName;
     public $password;
@@ -29,7 +29,7 @@ class User {
         $dbUser = array(
             "UserID" => $dbRow["UserID"],
             "Email" => $dbRow["Email"],
-            "DisplayName" => $dbRow["DisplayName"],
+            "Nickname" => $dbRow["Nickname"],
             "FirstName" => $dbRow["FirstName"],
             "LastName" => $dbRow["LastName"],
             "CreationDate" => $dbRow["CreationDate"],
@@ -46,12 +46,22 @@ class User {
         $this->dirty = false;
     }
 
-    public function createNew($email, $displayName, $lastName, $firstName=NULL,
+    public function createGuest($nickname, $userID=NULL) {
+        $this->nickname = $nickname;
+        $query = " INSERT INTO User (UserID, Nickname)"
+             . = " VALUES(:userID, :nickname) ";
+        $stmt->bindValue(":userID", $this->userID, PDO::PARAM_INT);  //this should be NULL
+        $stmt->bindValue(":nickname", $this->nickname, PDO::PARAM_STR);
+
+        
+    }
+
+    public function createNew($email, $nickname, $lastName, $firstName=NULL,
         $userLevelID=NULL, $userID=NULL, $creationDate=NULL,
         $uploadPath=NULL ) {  //password is generated
 
         $this->email = $email;
-        $this->displayName = $displayName;
+        $this->nickname = $nickname;
         $this->lastName = $lastName;
         $this->firstName = $firstName;
         if (empty($userLevelID) || ($userLevelID < $GLOBALS['MIN_USER_LEVEL_LISTED'])) {
@@ -62,9 +72,9 @@ class User {
         $this->userID = $userID;
         $this->creationDate = $creationDate;
 
-        $query = " INSERT INTO User (UserID, Email, DisplayName, FirstName, LastName, Password, "
+        $query = " INSERT INTO User (UserID, Email, Nickname, FirstName, LastName, Password, "
                 ." PassVer, UserLevelID, CreationDate) "
-                ." VALUES (:userID, :email, :displayName, :firstName, :lastName, :password, "
+                ." VALUES (:userID, :email, :nickname, :firstName, :lastName, :password, "
                 ." NULL, :userLevelID, :creationDate ); ";
 
         $passGen = chr(random_int(33,126)); //generate random ascii sequence
@@ -83,7 +93,7 @@ class User {
         $stmt = $this->conn->prepare($query, $this->attributes);
         $stmt->bindValue(":userID", $this->userID, PDO::PARAM_INT);  //this should be NULL
         $stmt->bindValue(":email", $this->email, PDO::PARAM_STR);
-        $stmt->bindValue(":displayName", $this->displayName, PDO::PARAM_STR);
+        $stmt->bindValue(":nickname", $this->nickname, PDO::PARAM_STR);
         $stmt->bindValue(":firstName", $this->firstName, PDO::PARAM_STR);
         $stmt->bindValue(":lastName", $this->lastName, PDO::PARAM_STR);
         $stmt->bindValue(":password", $passGen, PDO::PARAM_STR);

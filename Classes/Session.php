@@ -8,10 +8,10 @@ class Session {
     private $table_name = 'Session';
     private $attributes;
     private $debugH;
-    private $sessionID;
-    private $userID; //primary key, no reason to change this.
+    private $sessionID; //primary key, no reason to change this.     
     private $dirty;
 
+    public $userID;
     public $ipAddr;
     public $fingerprint;
     public $lastMessageId;
