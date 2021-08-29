@@ -5,6 +5,7 @@ require_once '../config/config.php';
 class DebugHelper {
     private $trackedObjects;
     private $debugMode;
+    private $messages;
 
     public function addObject($obj) {
         if (!empty($this->trackedObjects)) {
@@ -12,6 +13,18 @@ class DebugHelper {
         } else {
             $this->trackedObjects = array($obj);
         }
+    }
+
+    public function addMessage($msg) {
+        if (!empty($this->messages)) {
+            array_push($this->messages, $msg);
+        } else {
+            $this->messages = array($msg);
+        }
+    }
+
+    public function clearMessages($msg) {
+        $this->$messages = array();
     }
 
     public function setTesting($debugMode=false) {
@@ -23,6 +36,9 @@ class DebugHelper {
         $subject = "Error for $userEmail";
         $errorInfo = print_r($this->trackedObjects, true);
         $adminMessage .= "\nDebug Helper was tracking these objects: \n $errorInfo \n ";
+        if (!empty($this->messages)) {
+            $adminMessage .= "\nMessages added: " . print_r($this->messages, true);
+        }
         mail($GLOBALS['ACTUAL_ADMIN'],$subject,$adminMessage,$headers);
         if ($this->debugMode)
             die("Debug Mode is on.  $adminMessage");

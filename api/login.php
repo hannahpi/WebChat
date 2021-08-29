@@ -4,6 +4,7 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 require_once '../Classes/DebugHelper.php';
 require_once '../Classes/User.php';
+require_once '../Classes/Session.php';
 require_once '../Classes/Database.php';
 
 $database = new Database();
@@ -22,24 +23,15 @@ $debugH->addObject($request);
 $debugH->addObject($myUser);
 $debugH->setTesting(true);  //TODO: please remove
 
-function isUserMe($myUser, $otherUser) {
-    return ($myUser->email == $otherUser->email) ;
-}
-
-function update_user($conn, $attributes, $request) {    
+function login_user($conn, $attributes, $request) {    
     $user = new User($conn, $attributes);
-    $myUser = new User($conn, $attributes);
-    if (isset($_SESSION['Email'])) {
-        $myUser->get($_SESSION['Email'], false);
-    }
     $userInfo = json_decode(strip_tags($request),true);
 
-    //if admin or me
-    if ($userInfo["UserID"]) {
-        $user->getByID($userInfo["UserID"]);
-        $user->setEmail($userInfo["Email"]);
-    } else if ($userInfo["Email"]) {
-        $user->get($userInfo["Email"],false);
+    if (($userInfo["Email"]) && ($userInfo["Password"])) {
+        $user = $user->login_user($userInfo);
+        $session = new Session($conn, $attributes);
+        $session->create_new($user->userID);
+        $_SESSION['SessionObject'] = $session;     
     }
 
     if (isUserMe($myUser, $user) || $user->isUserAdmin()) {
@@ -63,7 +55,7 @@ function update_user($conn, $attributes, $request) {
     print_r($request);
 }
 
-function add_user($conn, $attributes, $request) {
+function logout_user($conn, $attributes, $request) {
     $user = new User($conn, $attributes);    
     
     $userInfo = json_decode(strip_tags($request),true);
@@ -84,38 +76,14 @@ function add_user($conn, $attributes, $request) {
     print_r(json_encode($user));
 }
 
-function get_user($conn, $attributes, $request) {
-    $user = new User($conn, $attributes);
-    switch (strtolower($request[0])) {
-        case "email":
-            $rEmail = strip_tags($request[1]);
-            break;
-        case "getall":
-            print_r($user->getAllJson());
-            return;
-        default:
-            $rID = strip_tags($request[0]);
-            break;
-    }
-    if (isset($rID)) {
-        echo $user->getByID($rID, true);
-    } else if (isset($rEmail)) {
-        echo $user->get($rEmail);
-    }
-    echo "request:";
-    print_r($request);
-}
+
 
 switch ($method) {
-    case 'PUT':
-        update_user($conn, $attributes, $request);
+    case 'DELETE':
+        logout_user($conn, $attributes, $request);
         break;
     case 'POST':
-        add_user($conn, $attributes, $request);
-        break;
-    case 'GET': 
-        $request = explode("/", substr(@$_SERVER['PATH_INFO'], 1));
-        get_user($conn, $attributes, $request);
+        login_user($conn, $attributes, $request);
         break;
     default:
         print_r(json_encode(array("message" => "Invalid method received")));

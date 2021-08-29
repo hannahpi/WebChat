@@ -47,9 +47,12 @@ class Session {
      * function: createNew
      *
      */
-    public function createNew($userID, $ipAddr, $lastAction="login", $lastActionTime=NULL, $loginTime=NULL) {
+    public function createNew($userID, $ipAddr=NULL, $lastAction="login", $lastActionTime=NULL, $loginTime=NULL) {
         $this->userID = $userID;
-        $this->ipAddr = $_SERVER['REMOTE_ADDR'];
+        if ( isset(ipAddr))
+            $this->ipAddr = $ipAddr;
+        else
+            $this->ipAddr = $_SERVER['REMOTE_ADDR'];
         $this->fingerprint = hash_hmac('sha256', $_SERVER['HTTP_USER_AGENT'], hash('sha256', $_SERVER['REMOTE_ADDR'], true));
         $this->loginTime = time();
         $_SESSION["lastActionTime"] = time();
