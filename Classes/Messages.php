@@ -89,4 +89,18 @@ class Message {
         return print_r(json_encode($this->interpretItem($row)),true);
     }
 
+    public function getMessagesSince($userID, $lastMessageID, $destination) {
+        $this->messageId = $lastMessageID;
+        if (!isset($lastMessageID)) {
+            $this->messageId = -1;
+        }
+        $this->userID = $userID;
+        $this->destination = $destination;
+
+        $query = " Select FROM Messages "
+                ." WHERE (MessageID > :lastMessageID "
+                ." AND Destination like '%:destination%' "
+                ." AND Visible = 1; ";
+    }
+
 ?>

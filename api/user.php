@@ -2,6 +2,7 @@
 session_start();
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
+require_once '../config/config.php';
 require_once '../Classes/DebugHelper.php';
 require_once '../Classes/User.php';
 require_once '../Classes/Database.php';
@@ -28,13 +29,12 @@ function isUserMe($myUser, $otherUser) {
 
 function update_user($conn, $attributes, $request) {    
     $user = new User($conn, $attributes);
-    $myUser = new User($conn, $attributes);
+    $callingUser = new User($conn, $attributes);
     if (isset($_SESSION['Email'])) {
-        $myUser->get($_SESSION['Email'], false);
+        $callingUser->get($_SESSION['Email'], false);
     }
     $userInfo = json_decode(strip_tags($request),true);
 
-    //if admin or me
     if ($userInfo["UserID"]) {
         $user->getByID($userInfo["UserID"]);
         $user->setEmail($userInfo["Email"]);
@@ -42,7 +42,8 @@ function update_user($conn, $attributes, $request) {
         $user->get($userInfo["Email"],false);
     }
 
-    if (isUserMe($myUser, $user) || $user->isUserAdmin()) {
+    //if Calling User is self or calling user is an admin and target user is not an admin, perform the update
+    if (isUserMe($callingUser, $user) || ($callingUser->isUserAdmin() && !$user->isUserAdmin())) {
         if (isset($userInfo["Nickname"])) 
             $user->setNickname($userInfo["Nickname"]);
         if (isset($userInfo["FirstName"])) 
@@ -51,16 +52,22 @@ function update_user($conn, $attributes, $request) {
             $user->setLastName($userInfo["LastName"]);
         if (isset($userInfo["Password"])) 
             $user->setPassword($userInfo["Password"]);
-    }
-    //if admin
-    if ($user->isUserAdmin()) {
         if (isset($userInfo["CreationDate"]))
             $user->setCreationDate($userInfo["CreationDate"]);
-        if (isset($userInfo["UserLevelID"]))
-            $user->setUserLevelID($userInfo["UserLevelID"]);    
+        
+        //we should be updating the user level.
+        if (isset($userInfo["UserLevelID"])) {
+            $user->setUserLevelID($userInfo["UserLevelID"]); 
+        } else {
+            //if the user level is lower than minimum for registered/verified user-change it.
+            if ($user["UserLevelID"] < $GLOBALS['MIN_USER_LEVEL_LISTED']) {
+                $user->setUserLevelID($GLOBALS['MIN_USER_LEVEL_LISTED']);
+            }
+        } 
     }
+    
     $user->updateDB();
-    print_r($request);
+    print_r($user);
 }
 
 function add_user($conn, $attributes, $request) {
