@@ -101,6 +101,15 @@ class Message {
                 ." WHERE (MessageID > :lastMessageID "
                 ." AND Destination like '%:destination%' "
                 ." AND Visible = 1; ";
+
+        $stmt = $this->conn->prepare($query, $this->attributes);
+        $stmt->bindValue(":lastMessageID", $this->userID, PDO::PARAM_INT);  //this should be NULL        
+        $stmt->bindValue(":destination", $this->destination, PDO::PARAM_STR);
+        $stmt->bindValue(":messageText", $this->messageText, PDO::PARAM_STR);                
+        $stmt->bindValue(":visible", $this->creationDate, PDO::PARAM_INT);
+        $stmt->execute() or $this->debugH->errormail("Unknown", "Create new message failed", "Create Messages Query failed.");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return print_r(json_encode($this->interpretItem($row)),true);
     }
 
 ?>
