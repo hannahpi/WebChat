@@ -89,7 +89,7 @@ class Message {
         return print_r(json_encode($this->interpretItem($row)),true);
     }
 
-    public function getMessagesSince($userID, $lastMessageID, $destination) {
+    public function getMessagesSince($userID, $lastMessageID, $destination, $isJSON=TRUE) {
         $this->messageId = $lastMessageID;
         if (!isset($lastMessageID)) {
             $this->messageId = -1;
@@ -109,7 +109,39 @@ class Message {
         $stmt->bindValue(":visible", $this->creationDate, PDO::PARAM_INT);
         $stmt->execute() or $this->debugH->errormail("Unknown", "Create new message failed", "Create Messages Query failed.");
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return print_r(json_encode($this->interpretItem($row)),true);
+        if ($isJSON) {
+            return print_r(json_encode($this->interpretItem($row)),true);
+        } else {
+            return $this->interpretItem($row);
+        }
+    }
+
+    public function getSubscribedMessagesSince($userID, $lastMessageID, $isJSON=TRUE) {
+        $messages = array();
+        
+        $this->messageId = $lastMessageID;
+        if (!isset($lastMessageID)) { 
+            $this->messageId = -1;
+        }
+        $this->userID = $userID;
+        $query = " SELECT Object From Subscription "
+               . " WHERE (UserID = :userID) ";
+        
+        $stmt = $this->conn->prepare($query, $this->attributes);
+        $stmt->bindValue(":userID", $this->userID, PDO::PARAM_INT);
+        $stmt->execute()  or $this->debugH->errormail("Unknown", "get subscriptions failed", "Get subscriptions for messages Query failed.");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach($rows as $row) {
+            $messages = array_merge(getMessagesSince($userID, $lastMessageID, $row["Object"], false));
+        }
+
+        if ($isJSON) {
+            return print_r(json_encode($this->interpretItem($row)),true);
+        } else {
+            return $this->interpretItem($row);
+        }
+
+
     }
 
 ?>
